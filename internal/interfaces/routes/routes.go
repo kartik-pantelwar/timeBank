@@ -22,10 +22,13 @@ func InitRoutes(
 		r.Use(middleware.Authenticate)
 		r.Get("/profile", userHandler.Profile)
 		r.Post("/logout", userHandler.LogOut)
+		r.Post("/sessions", userHandler.CreateServiceSession)
+		r.Post("/addskill", userHandler.CreateSkill)
 	})
 
 	router.Route("/sessions", func(r chi.Router) {
 		r.Use(middleware.Authenticate)
+		
 	})
 
 	return router

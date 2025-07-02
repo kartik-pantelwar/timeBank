@@ -4,6 +4,7 @@ import (
 	"TimeBankProject/internal/adaptors/persistance"
 	"TimeBankProject/internal/core/serviceSession"
 	"TimeBankProject/internal/core/session"
+	"TimeBankProject/internal/core/skills"
 	"TimeBankProject/internal/core/user"
 	"TimeBankProject/pkg/utilities"
 	"fmt"
@@ -119,5 +120,16 @@ func matchSessionToken(id string, tokenHash string) error {
 
 func (u *UserService) CreateServiceSession(s serviceSession.SSession) (serviceSession.SSession, error) {
 	newSession, err := u.userRepo.CreateServiceSession(s)
-	return newSession, err
+	if err!=nil{
+		return s,err
+	}
+	return newSession, nil
+}
+
+func (u *UserService) CreateNewSkill(s skills.Skill) (skills.Skill, error){
+	newSkill,err:= u.userRepo.AddSkill(s)
+	if err!=nil{
+		return s,err
+	}
+	return newSkill,nil
 }

@@ -2,6 +2,7 @@ package userhandler
 
 import (
 	"TimeBankProject/internal/core/serviceSession"
+	"TimeBankProject/internal/core/skills"
 	"TimeBankProject/internal/core/user"
 	userservice "TimeBankProject/internal/usecase"
 	"encoding/json"
@@ -53,6 +54,7 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	atCookie := http.Cookie{
@@ -84,7 +86,7 @@ func (u *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (u *UserHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	userId, ok := r.Context().Value("user").(int)
-
+	//user ID is fetched by using Context value. We passed context in the Authenticate middleware, which picks the user value and store it is context value, so we can get user ID in any route using context, after using authenticate middleware
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{"error": "user not found in context"})
@@ -173,16 +175,46 @@ func (u *UserHandler) LogOut(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Successful Logout"})
 }
 
-
-func (u *UserHandler) CreateServiceSession(w http.ResponseWriter, r *http.Request){
+func (u *UserHandler) CreateServiceSession(w http.ResponseWriter, r *http.Request) {
 	var newServiceSession serviceSession.SSession
-	
-	if err:= json.NewDecoder(r.Body).Decode(&newServiceSession); err!=nil{
+
+	if err := json.NewDecoder(r.Body).Decode(&newServiceSession); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	a,err:= u.userservice.CreateServiceSession
+	createdSession, err := u.userService.CreateServiceSession(newServiceSession)
 
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	newServiceSession = createdSession
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newServiceSession)
+}
+
+func (u *UserHandler) CreateSkill(w http.ResponseWriter, r *http.Request) {
+	var newSkill skills.Skill
+
+	if err := json.NewDecoder(r.Body).Decode(&newSkill); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	createdSkill, err := u.userService.CreateNewSkill(newSkill)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	newSkill = createdSkill
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newSkill)
 }

@@ -1,11 +1,12 @@
 package migrate
 
 import (
+	"TimeBankProject/pkg/sqlparser"
 	"context"
 	"database/sql"
-	"TimeBankProject/pkg/sqlparser"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Migrate struct {
@@ -43,11 +44,11 @@ func (m *Migrate) RunMigrations() error {
 	version, err1 := m.getVersion()
 	if err1 != nil {
 		fmt.Println("ERR3")
+		return err1
 	}
 
 	//It means we are already on latest db state
 	if version == len(usableEntries) {
-		fmt.Println("ERR4")
 		return nil
 	}
 
@@ -85,14 +86,14 @@ func (m *Migrate) RunMigrations() error {
 	if err2 != nil {
 		return err
 	}
-	
+
 	err = outFile.Close()
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 
 	err = m.txn.Commit()
-	if err !=nil{
+	if err != nil {
 		return err
 	}
 	return nil
@@ -107,7 +108,18 @@ func (m *Migrate) parseFilesAndMigrateDb() error {
 			return err
 		}
 
+		// *Bypassing unterminated Dollar error in Trigger
 		content := string(bytes)
+		if strings.Contains(content, "CREATE OR REPLACE") || strings.Contains(content, "CREATE FUNCTION") {
+			fmt.Println("Bypassing function/trigger,", file.Dir.Name())
+
+			_, err := m.txn.Exec(content)
+			if err != nil {
+				fmt.Println("Error in bypassing :", err)
+				return err
+			}
+			continue
+		}
 		commands := sqlparser.ParseSqlFile(content)
 		for _, command := range commands {
 			_, err = m.txn.Exec(command)

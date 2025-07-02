@@ -3,7 +3,6 @@ package main
 import (
 	"TimeBankProject/internal/adaptors/persistance"
 	"TimeBankProject/internal/config"
-	"TimeBankProject/internal/interfaces/handler/servicehandler"
 	userhandler "TimeBankProject/internal/interfaces/handler/userhandler"
 	"TimeBankProject/internal/interfaces/routes"
 	user "TimeBankProject/internal/usecase"
@@ -39,9 +38,8 @@ func main() {
 	sessionRepo := persistance.NewSessionRepo(database)
 	userService := user.NewUserService(userRepo, sessionRepo)
 	userHandler := userhandler.NewUserHandler(userService)
-	sHandler := servicehandler.NewServiceHandler()
 
-	router := routes.InitRoutes(&userHandler,sHandler)
+	router := routes.InitRoutes(&userHandler)
 
 	configP, err := config.LoadConfig()
 	if err != nil {

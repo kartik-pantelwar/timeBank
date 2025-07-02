@@ -8,61 +8,61 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
-type Claims struct{
+
+type Claims struct {
 	Uid int `json:"uid"`
 	jwt.StandardClaims
 }
 
 var jwtKey = []byte("kfladsoifdwfds")
 
-func GenerateJWT(uid int)(string, time.Time, error){
-	expirationTime:= time.Now().Add(5 * time.Minute)
-	claims:= &Claims{
+func GenerateJWT(uid int) (string, time.Time, error) {
+	expirationTime := time.Now().Add(5 * time.Hour) //!Default was 5 * time.Minute
+	claims := &Claims{
 		Uid: uid,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
-	token:= jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	//! I was using Signing Method ES256 instead of HS256
-	tokenString, err:= token.SignedString(jwtKey)
-	if err!=nil{
-		return "", time.Now(),err
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", time.Now(), err
 	}
 	return tokenString, expirationTime, nil
 }
 
-func ValidateJWT(tokenString string)(*Claims, error){
-	claims:= &Claims{}
-	token, err:= jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{},error){
-		return jwtKey,nil
+func ValidateJWT(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
 	})
-	if err!=nil{
-		if err == jwt.ErrSignatureInvalid{
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
 			return nil, err
 		}
 		return nil, err
 	}
-	if !token.Valid{
+	if !token.Valid {
 		return nil, err
 	}
 	return claims, nil
 }
 
-func GenerateSession(userId int) (session.Session,error){
-	tokenID:= uuid.New()
-	expiresAt:= time.Now().Add(2*time.Hour)
-	issuedAt:= time.Now()
+func GenerateSession(userId int) (session.Session, error) {
+	tokenID := uuid.New()
+	expiresAt := time.Now().Add(20 * time.Hour) //!Default was 2 * time.Hour
+	issuedAt := time.Now()
 
-	hashToken, err:= bcrypt.GenerateFromPassword([]byte(tokenID.String()),bcrypt.DefaultCost)
-	if err!=nil{
-		return session.Session{},err
+	hashToken, err := bcrypt.GenerateFromPassword([]byte(tokenID.String()), bcrypt.DefaultCost)
+	if err != nil {
+		return session.Session{}, err
 	}
 
-
-	session:= session.Session{
-		Id: tokenID,
-		Uid: userId,
+	session := session.Session{
+		Id:        tokenID,
+		Uid:       userId,
 		TokenHash: string(hashToken),
 		ExpiresAt: expiresAt,
 		IssuedAt:  issuedAt,
