@@ -133,3 +133,7 @@ func (u *UserService) CreateNewSkill(s skills.Skill) (skills.Skill, error){
 	}
 	return newSkill,nil
 }
+
+func (u *UserService) CreateNewFeedback(f serviceSession.Feedback)(serviceSession.Feedback,error){
+	return serviceSession.Feedback{},nil
+}

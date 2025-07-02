@@ -185,7 +185,6 @@ func (u *UserHandler) CreateServiceSession(w http.ResponseWriter, r *http.Reques
 	}
 
 	createdSession, err := u.userService.CreateServiceSession(newServiceSession)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -207,7 +206,6 @@ func (u *UserHandler) CreateSkill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdSkill, err := u.userService.CreateNewSkill(newSkill)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -217,4 +215,23 @@ func (u *UserHandler) CreateSkill(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newSkill)
+}
+
+func (u *UserHandler) CreateFeedback(w http.ResponseWriter, r *http.Request) {
+	var newFeedback serviceSession.Feedback
+	if err := json.NewDecoder(r.Body).Decode(&newFeedback); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	createdFeedback, err := u.userService.CreateNewFeedback(newFeedback)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	newFeedback = createdFeedback
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newFeedback)
 }

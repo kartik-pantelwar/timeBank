@@ -66,10 +66,49 @@ func (u *UserRepo) GetUserByID(id int) (user.User, error) {
 
 func (u *UserRepo) CreateServiceSession(newSession serviceSession.SSession) (serviceSession.SSession, error) {
 	var sessionId int
-	query := "insert into service_sessions(duration, provided_by, provided_to, skill_id, scheduled_at, notes) values($1,$2,$3,$4,$5,$6) returning id"
-	err := u.db.db.QueryRow(query, newSession.Duration, newSession.ProvidedBy, newSession.ProvidedTo, newSession.SkillId, newSession.Scheduled_at, newSession.Notes).Scan(&sessionId)
+	var tempSkillID int
+	var blankSession serviceSession.SSession
+	// ^Check whether provided_by and Provided_to user exist, or not
+	// *Use Transaction
+	tx, err := u.db.db.Begin()
 	if err != nil {
 		return serviceSession.SSession{}, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	//check user ki skill active hai ya nahi
+	var correspongingSkill skills.Skill
+	correspongingSkill.User_Id = newSession.ProvidedBy
+
+	// else {
+	// 	fmt.Println("Data type of Skill Status is Wrong")	//for personal user, tbhi pta chalega ki DB ka Boolean, Go ke bool se ccompare kr pa rha hai ya nahi
+	// }
+
+	err = tx.QueryRow("select id from skills where name=$1 and user_id=$2", newSession.SkillName, newSession.ProvidedBy).Scan(&tempSkillID)
+	if err != nil {
+		fmt.Println("Unable to fetch Record from Skills Table")
+	}
+
+	err = tx.QueryRow("select status from skills where user_id=$1", correspongingSkill.User_Id).Scan(&correspongingSkill.Status)
+	if err != nil {
+		return blankSession, fmt.Errorf("Failed to Fetch Skill Status")
+	}
+
+	if correspongingSkill.Status == false {
+		return blankSession, fmt.Errorf("Helper Skill is not active")
+	}
+
+	query := "insert into service_sessions(duration, provided_by, provided_to, skill_name, scheduled_at, notes) values($1,$2,$3,$4,$5,$6) returning id"
+	err = u.db.db.QueryRow(query, newSession.Duration, newSession.ProvidedBy, newSession.ProvidedTo, newSession.SkillName, newSession.Scheduled_at, newSession.Notes).Scan(&sessionId)
+	if err != nil {
+		return blankSession, fmt.Errorf("Unable to get New Session ID, or insert row")
+	}
+	err = tx.Commit()
+	if err != nil {
+		return blankSession, fmt.Errorf("Failed to Insert record, Unable to complete Trasaction!!!")
 	}
 	newSession.ServiceId = sessionId
 	return newSession, nil

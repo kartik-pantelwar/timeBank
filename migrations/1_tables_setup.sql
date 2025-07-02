@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS skills (
     name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
     user_id INTEGER REFERENCES users(uid) ON DELETE CASCADE,
-    status BOOLEAN DEFAULT TRUE
+    status BOOLEAN DEFAULT TRUE,
+    UNIQUE(user_id,name)
 );
 
 -- SERVICE SESSIONS TABLE
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS service_sessions (
     duration INTERVAL NOT NULL,
     provided_by INTEGER REFERENCES users(uid) ON DELETE CASCADE,
     provided_to INTEGER REFERENCES users(uid) ON DELETE CASCADE,
-    skill_id INTEGER REFERENCES skills(id) ON DELETE CASCADE,
+    skill_name VARCHAR(100) REFERENCES skills(name) ON DELETE CASCADE,
     started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMPTZ
 );
@@ -57,25 +58,50 @@ CREATE TABLE IF NOT EXISTS time_credits (
     transaction_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- SAMPLE TRIGGER FUNCTION
-CREATE OR REPLACE FUNCTION func1()
+
+-- *TRIGGERS
+-- ^FOR CHECKING BALANCE BEFORE CREATING SESSION
+CREATE OR REPLACE FUNCTION check_balance()
 RETURNS TRIGGER AS $$
+DECLARE
+    user_balance DECIMAL(5,2);
+    required_credits DECIMAL(5,2);
 BEGIN
-    RAISE NOTICE 'BLANK TRIGGER';
+    --CONVERTING DURATION INTO DECIMAL(FOR REQUIRED CREDITS)
+    required_credits:=EXTRACT(EPOCH FROM NEW.duration)/3600.0;
+
+    SELECT balance INTO user_balance
+    FROM users
+    WHERE uid = NEW.provided_to;
+
+    IF user_balance < required_credits THEN 
+        RAISE EXCEPTION 'Insufficient Balance!';
+    END IF;
+
+    UPDATE users
+    SET balance = balance - required_credits
+    WHERE uid = NEW.provided_to;
+
+    INSERT INTO time_credits (given_to, given_by, amount)
+    VALUES (NEW.provided_by, NEW.provided_to, required_credits);
+
+    RAISE NOTICE 'Session successfully Completed';
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER session_change
-AFTER UPDATE ON service_sessions
+BEFORE INSERT ON service_sessions
 FOR EACH ROW 
-EXECUTE FUNCTION func1();
+EXECUTE FUNCTION check_balance();
 
---END TIME TRIGGER
+
+-- ^END TIME TRIGGER
 CREATE OR REPLACE FUNCTION set_ended_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.ended_at = NEW.started_at + NEW.duration;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
