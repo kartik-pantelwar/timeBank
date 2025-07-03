@@ -3,14 +3,14 @@ package serviceSession
 import "time"
 
 type SSession struct {
-	ServiceId    int       `json:"serviceId"`
-	Duration     float64   `json:"duration"`
-	ProvidedBy   int       `json:"providedBy"`
-	ProvidedTo   int       `json:"providedTo"`
-	SkillName    string    `json:"skillName"`
-	Scheduled_at time.Time `json:"scheduled_at"`
-	Notes        string    `json:"notes"`
-	Created_at   time.Time `json:"created_at"`
+	ServiceId  int    `json:"serviceId"`
+	Duration   string `json:"duration"`
+	ProvidedBy int    `json:"providedBy"`
+	ProvidedTo int    `json:"providedTo"`
+	SkillName  string `json:"skillName"`
+	// Scheduled_at time.Time `json:"scheduled_at"`
+	// Notes        string    `json:"notes"`
+	Created_at time.Time `json:"created_at"`
 }
 
 type Feedback struct {

@@ -89,7 +89,7 @@ func (u *UserRepo) CreateServiceSession(newSession serviceSession.SSession) (ser
 
 	err = tx.QueryRow("select id from skills where name=$1 and user_id=$2", newSession.SkillName, newSession.ProvidedBy).Scan(&tempSkillID)
 	if err != nil {
-		fmt.Println("Unable to fetch Record from Skills Table")
+		return blankSession, fmt.Errorf("Unable to find Record in Skills Table")
 	}
 
 	err = tx.QueryRow("select status from skills where user_id=$1", correspongingSkill.User_Id).Scan(&correspongingSkill.Status)
@@ -100,9 +100,11 @@ func (u *UserRepo) CreateServiceSession(newSession serviceSession.SSession) (ser
 	if correspongingSkill.Status == false {
 		return blankSession, fmt.Errorf("Helper Skill is not active")
 	}
-
-	query := "insert into service_sessions(duration, provided_by, provided_to, skill_name, scheduled_at, notes) values($1,$2,$3,$4,$5,$6) returning id"
-	err = u.db.db.QueryRow(query, newSession.Duration, newSession.ProvidedBy, newSession.ProvidedTo, newSession.SkillName, newSession.Scheduled_at, newSession.Notes).Scan(&sessionId)
+	fmt.Println("New Session-", newSession)
+	//convert duration into interval
+	query := "insert into service_sessions(duration, provided_by, provided_to, skill_name) values($1,$2,$3,$4) returning id"
+	err = u.db.db.QueryRow(query, newSession.Duration, newSession.ProvidedBy, newSession.ProvidedTo, newSession.SkillName).Scan(&sessionId)
+	fmt.Println("Session id =",sessionId)
 	if err != nil {
 		return blankSession, fmt.Errorf("Unable to get New Session ID, or insert row")
 	}

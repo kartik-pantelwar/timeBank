@@ -23,6 +23,7 @@ func InitRoutes(
 		r.Get("/profile", userHandler.Profile)
 		r.Post("/logout", userHandler.LogOut)
 		r.Post("/sessions", userHandler.CreateServiceSession)
+		//duration should be in format 'hours:minutes:seconds'
 		r.Post("/skill/add", userHandler.CreateSkill)
 		r.Post("/session/{id}/feedback", userHandler.CreateFeedback)
 	})

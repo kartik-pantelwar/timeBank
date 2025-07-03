@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     uid SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     work_location TEXT NOT NULL,
     balance DECIMAL(5,2) DEFAULT 5.0 CHECK(balance >= 0),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -81,6 +81,10 @@ BEGIN
     UPDATE users
     SET balance = balance - required_credits
     WHERE uid = NEW.provided_to;
+
+    UPDATE users
+    SET balance = balance + required_credits
+    WHERE uid = NEW.provided_by;
 
     INSERT INTO time_credits (given_to, given_by, amount)
     VALUES (NEW.provided_by, NEW.provided_to, required_credits);
